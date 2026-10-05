@@ -3,32 +3,35 @@ version: 0.2
 env:
   variables:
     IMAGE_REPO_NAME: audittrail-ai
-    CONTAINER_NAME: audittrail-api
+    AWS_ACCOUNT_ID: "404107359700"
 
 phases:
   pre_build:
     commands:
       - |
-        ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
-        IMAGE_TAG="$(printf '%s' "${CODEBUILD_RESOLVED_SOURCE_VERSION:-$CODEBUILD_BUILD_NUMBER}" | cut -c 1-12)"
-        REPOSITORY_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}"
+        REGISTRY_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
         aws ecr describe-repositories --repository-names "$IMAGE_REPO_NAME" --region "$AWS_DEFAULT_REGION" >/dev/null
-        aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
-        {
-          echo "ACCOUNT_ID=$ACCOUNT_ID"
-          echo "IMAGE_TAG=$IMAGE_TAG"
-          echo "REPOSITORY_URI=$REPOSITORY_URI"
-        } >> "$CODEBUILD_ENV_FILE"
+        aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$REGISTRY_URI"
   build:
     commands:
-      - docker build --pull --tag "${REPOSITORY_URI}:${IMAGE_TAG}" .
+      - |
+        IMAGE_TAG="$(printf '%s' "${CODEBUILD_RESOLVED_SOURCE_VERSION:-$CODEBUILD_BUILD_NUMBER}" | cut -c 1-12)"
+        IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG}"
+        docker build --pull --tag "$IMAGE_URI" .
   post_build:
     commands:
-      - docker push "${REPOSITORY_URI}:${IMAGE_TAG}"
-      - docker tag "${REPOSITORY_URI}:${IMAGE_TAG}" "${REPOSITORY_URI}:latest"
-      - docker push "${REPOSITORY_URI}:latest"
-      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "${REPOSITORY_URI}:${IMAGE_TAG}" > imagedefinitions.json
-
-artifacts:
-  files:
-    - imagedefinitions.json
+      - |
+        IMAGE_TAG="$(printf '%s' "${CODEBUILD_RESOLVED_SOURCE_VERSION:-$CODEBUILD_BUILD_NUMBER}" | cut -c 1-12)"
+        IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG}"
+        REPOSITORY_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}"
+        docker push "$IMAGE_URI"
+        docker tag "$IMAGE_URI" "${REPOSITORY_URI}:latest"
+        docker push "${REPOSITORY_URI}:latest"
+      - |
+        if [ -n "${ECS_CLUSTER_NAME:-}" ] && [ -n "${ECS_SERVICE_NAME:-}" ]; then
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER_NAME" \
+            --service "$ECS_SERVICE_NAME" \
+            --force-new-deployment \
+            --region "$AWS_DEFAULT_REGION"
+        fi
