@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
+    "generate:capstone": "node scripts/generate-capstone.mjs",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
@@ -16,6 +17,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "pptxgenjs": "^4.0.1",
     "tailwindcss": "^4.0.0",
     "vite": "^6.0.7"
   }

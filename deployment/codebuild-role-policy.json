@@ -1,0 +1,48 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "EcrAuthentication",
+      "Effect": "Allow",
+      "Action": "ecr:GetAuthorizationToken",
+      "Resource": "*"
+    },
+    {
+      "Sid": "PushAuditTrailImage",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:CompleteLayerUpload",
+        "ecr:InitiateLayerUpload",
+        "ecr:PutImage",
+        "ecr:UploadLayerPart"
+      ],
+      "Resource": "arn:aws:ecr:us-east-1:404107359700:repository/audittrail-ai"
+    },
+    {
+      "Sid": "InspectAuditTrailRepository",
+      "Effect": "Allow",
+      "Action": "ecr:DescribeRepositories",
+      "Resource": "arn:aws:ecr:us-east-1:404107359700:repository/audittrail-ai"
+    },
+    {
+      "Sid": "BuildLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": [
+        "arn:aws:logs:us-east-1:404107359700:log-group:/aws/codebuild/audittrail-ai",
+        "arn:aws:logs:us-east-1:404107359700:log-group:/aws/codebuild/audittrail-ai:*"
+      ]
+    },
+    {
+      "Sid": "RedeployAuditTrailService",
+      "Effect": "Allow",
+      "Action": "ecs:UpdateService",
+      "Resource": "arn:aws:ecs:us-east-1:404107359700:service/audittrail-cluster/audittrail-service"
+    }
+  ]
+}

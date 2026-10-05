@@ -1,0 +1,27 @@
+{
+  "cluster": "audittrail-cluster",
+  "serviceName": "audittrail-service",
+  "taskDefinition": "audittrail-ai",
+  "desiredCount": 1,
+  "launchType": "FARGATE",
+  "platformVersion": "LATEST",
+  "healthCheckGracePeriodSeconds": 60,
+  "networkConfiguration": {
+    "awsvpcConfiguration": {
+      "subnets": [
+        "subnet-0ac608da5de642c42",
+        "subnet-0a9ad97492b012e59"
+      ],
+      "securityGroups": [
+        "sg-0d24fbd7fbfd5787e"
+      ],
+      "assignPublicIp": "ENABLED"
+    }
+  },
+  "deploymentConfiguration": {
+    "deploymentCircuitBreaker": {
+      "enable": true,
+      "rollback": true
+    }
+  }
+}
